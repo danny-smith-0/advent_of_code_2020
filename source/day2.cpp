@@ -34,7 +34,35 @@ In the above example, 2 passwords are valid. The middle password, cdefg, is not;
 The first and third passwords are valid: they contain one a or nine c, both within the limits of their respective policies.
 
 How many passwords are valid according to their policies?
+
+--- Part Two ---
+While it appears you validated the passwords correctly, they don't seem to be what the Official Toboggan Corporate Authentication System is expecting.
+
+The shopkeeper suddenly realizes that he just accidentally explained the password policy rules from his old job at the sled rental place down the street! The Official Toboggan Corporate Policy actually works a little differently.
+
+Each policy actually describes two positions in the password, where 1 means the first character, 2 means the second character, and so on. (Be careful; Toboggan Corporate Policies have no concept of "index zero"!) Exactly one of these positions must contain the given letter. Other occurrences of the letter are irrelevant for the purposes of policy enforcement.
+
+Given the same example list from above:
+
+1-3 a: abcde is valid: position 1 contains a and position 3 does not.
+1-3 b: cdefg is invalid: neither position 1 nor position 3 contains b.
+2-9 c: ccccccccc is invalid: both position 2 and position 9 contain c.
+How many passwords are valid according to the new interpretation of the policies?
 */
+
+struct Policy
+{
+    int int0 = 0; //part1, min. part2, 1st char location (1-indexed)
+    int int1 = 0; //part1, max. part2, 2nd char location (1-indexed)
+    char policy_char;
+    std::string pwd;
+
+    bool count_char_match()
+    {
+        int count = std::count(pwd.begin(), pwd.end(), policy_char);
+        return count >= int0 && count <= int1;
+    }
+};
 
 std::vector<strings_t> separate_policies_and_passwords(std::ifstream& input)
 {
@@ -50,18 +78,30 @@ std::vector<strings_t> separate_policies_and_passwords(std::ifstream& input)
     return policies_and_pwds;
 }
 
-bool check_if_password_matches_policy(strings_t policy_and_pwd)
+// check_if_password_matches_policy
+
+Policy parse_policy(strings_t policy_and_pwd)
 {
+    strings_t policy_strings = substrings_to_strings(policy_and_pwd[0], " ");
+    ints_t min_n_max = substrings_to_ints(policy_strings[0], "-");
 
-    strings_t policy = substrings_to_strings(policy_and_pwd[0], " ");
-    ints_t min_n_max = substrings_to_ints(policy[0], "-");
-    int min = min_n_max[0];
-    int max = min_n_max[1];
-    char policy_char = *policy[1].c_str();
+    Policy my_policy;
+    my_policy.int0 = min_n_max[0];
+    my_policy.int1 = min_n_max[1];
+    my_policy.policy_char = *policy_strings[1].c_str();
+    my_policy.pwd = policy_and_pwd[1];
+    return my_policy;
+}
 
-    std::string pwd = policy_and_pwd[1];
-    int count = std::count(pwd.begin(), pwd.end(), policy_char);
-    return count >= min && count <= max;
+int count_passwords_that_match_part1(std::vector<strings_t> policies_and_pwds)
+{
+    int count = 0;
+    for (auto policy_and_pwd : policies_and_pwds)
+    {
+        Policy policy = parse_policy(policy_and_pwd);
+        count += policy.count_char_match() ? 1 : 0;
+    }
+    return count;
 }
 
 int main ()
@@ -74,13 +114,8 @@ int main ()
     std::vector<strings_t> policies_and_pwds_test = separate_policies_and_passwords(input_test);
     std::vector<strings_t> policies_and_pwds_real = separate_policies_and_passwords(input_real);
 
-    int count_test = 0;
-    int count_real = 0;
-    for (auto policy_and_pwd : policies_and_pwds_test)
-        count_test += check_if_password_matches_policy(policy_and_pwd) ? 1 : 0;
-
-    for (auto policy_and_pwd : policies_and_pwds_real)
-        count_real += check_if_password_matches_policy(policy_and_pwd) ? 1 : 0;
+    int count_test = count_passwords_that_match_part1(policies_and_pwds_test);
+    int count_real = count_passwords_that_match_part1(policies_and_pwds_real);
 
     results(count_test, 2, count_real);
     return 0;
